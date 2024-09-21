@@ -105,5 +105,3 @@ export const ShowYourWork2 = (args: StoryArgs): React.ReactElement => {
         />
     );
 };
-
-// trivial change
