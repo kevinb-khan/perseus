@@ -1,4 +1,4 @@
-name: Publish Storybook to Chromatic
+name: Publish Storybook to GitHub Pages
 
 # See: https://www.chromatic.com/docs/setup-turbosnap/#github-pull_request-triggers
 on:
@@ -8,7 +8,7 @@ on:
     # review the above URL to see how to fix it.
     pull_request:
     push:
-        branches: [main]
+        branches: [show-your-work]
 
 # When a new revision is pushed to a PR, cancel all in-progress CI runs for that
 # PR. See https://docs.github.com/en/actions/using-jobs/using-concurrency
@@ -17,8 +17,7 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    chromatic:
-        name: Publish Storybook to Chromatic
+    build:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
@@ -37,10 +36,25 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
 
-            - name: Publish to Chromatic for visual testing
-              uses: chromaui/action@v11
+            - name: Build Storybook
+              run: yarn build-storybook
+
+            - name: Upload Page Artifact
+              uses: actions/upload-pages-artifact@v3
               with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  projectToken: ${{ secrets.CHROMATIC_APP_CODE }}
-                  autoAcceptChanges: "main"
-                  onlyStoryFiles: "**/*regression.stories.tsx"
+                path: ./dist/
+
+    deploy:
+        needs: build
+        permissions:
+            pages: write      # to deploy to Pages
+            id-token: write   # to verify the deployment originates from an appropriate source
+            actions: read     # to access artifacts from the build job
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
